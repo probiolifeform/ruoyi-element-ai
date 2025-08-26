@@ -1,14 +1,13 @@
-<!-- LoginBtn 登录按钮 -->
+<!-- src/layouts/components/Header/components/LoginBtn.vue -->
 <script setup lang="ts">
-import LoginDialog from '@/components/LoginDialog/index.vue';
-import { useUserStore } from '@/stores';
+import { useRouter } from 'vue-router';
 
-const userStore = useUserStore();
-const isLoginDialogVisible = computed(() => userStore.isLoginDialogVisible);
+const router = useRouter();
 
-// 点击登录按钮时调用Store方法打开弹框
+// Click handler: Redirect to login page
 function handleClickLogin() {
-  userStore.openLoginDialog();
+  console.log('Login button clicked'); // Add this to confirm click
+  router.push('/login');
 }
 </script>
 
@@ -20,9 +19,6 @@ function handleClickLogin() {
     >
       登录
     </div>
-
-    <!-- 登录弹框 -->
-    <LoginDialog v-model:visible="isLoginDialogVisible" />
   </div>
 </template>
 

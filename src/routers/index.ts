@@ -1,7 +1,8 @@
-import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router';
+// src/routers/index.ts
 import { useNProgress } from '@vueuse/integrations/useNProgress';
 import { createRouter, createWebHistory } from 'vue-router';
 import { ROUTER_WHITE_LIST } from '@/config';
+import { initDynamicRouter } from '@/routers/modules/dynamicRouter';
 import { errorRouter, layoutRouter, staticRouter } from '@/routers/modules/staticRouter';
 import { useUserStore } from '@/stores';
 
@@ -20,61 +21,37 @@ const router = createRouter({
   scrollBehavior: () => ({ left: 0, top: 0 }),
 });
 
-// 路由前置守卫
-router.beforeEach(
-  async (
-    to: RouteLocationNormalized,
-    _from: RouteLocationNormalized,
-    next: NavigationGuardNext,
-  ) => {
-    const userStore = useUserStore();
+console.log('Registered routes:', router.getRoutes());
 
-    // 1、NProgress 开始
-    start();
+router.beforeEach(async (to, _from, next) => {
+  const userStore = useUserStore();
+  console.log('Navigating to:', to.path, 'Token:', userStore.token);
+  start();
+  document.title = (to.meta.title as string) || (import.meta.env.VITE_WEB_TITLE as string);
 
-    // 2、标题
-    document.title = (to.meta.title as string) || (import.meta.env.VITE_WEB_TITLE as string);
+  // Allow whitelisted routes (e.g., /login, /403, /404)
+  if (ROUTER_WHITE_LIST.includes(to.path)) {
+    console.log('Route in whitelist:', to.path);
+    return next();
+  }
 
-    // 3、权限 预留
-    // 3、判断是访问登陆页，有Token访问当前页面，token过期访问接口，axios封装则自动跳转登录页面，没有Token重置路由到登陆页。
-    // if (to.path.toLocaleLowerCase() === LOGIN_URL) {
-    //   // 有Token访问当前页面
-    //   if (userStore.token) {
-    //     return next(from.fullPath);
-    //   }
-    //   else {
-    //     ElMessage.error('账号身份已过期，请重新登录');
-    //   }
-    //   // 没有Token重置路由到登陆页。
-    //   // resetRouter();  // 预留
-    //   return next();
-    // }
+  // Redirect to login if no token
+  if (!userStore.token) {
+    console.log('No token, redirecting to /login');
+    return next('/login');
+  }
 
-    // 4、判断访问页面是否在路由白名单地址[静态路由]中，如果存在直接放行。
-    if (ROUTER_WHITE_LIST.includes(to.path))
-      return next();
-
-    // 5、判断是否有 Token，没有重定向到 login 页面。
-    if (!userStore.token)
-      userStore.logout();
-
-    // 其余逻辑 预留...
-
-    // 6、正常访问页面。
-    next();
-  },
-);
-
-// 路由跳转错误
-router.onError((error) => {
-  // 结束全屏动画
-  done();
-  console.warn('路由错误', error.message);
+  // Load dynamic routes for authenticated users
+  await initDynamicRouter();
+  next();
 });
 
-// 后置路由
+router.onError((error) => {
+  done();
+  console.warn('Router error:', error.message);
+});
+
 router.afterEach(() => {
-  // 结束全屏动画
   done();
 });
 

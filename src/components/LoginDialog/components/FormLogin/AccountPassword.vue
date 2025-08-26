@@ -1,13 +1,32 @@
-<!-- 账号密码登录表单 -->
+<!-- src/components/LoginDialog/components/FormLogin/AccountPassword.vue -->
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus';
-import type { LoginDTO } from '@/api/auth/types';
+import type { LoginDTO, LoginUser } from '@/api/auth/types';
+import { ElMessage } from 'element-plus';
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { login } from '@/api';
 import { useUserStore } from '@/stores';
 import { useLoginFormStore } from '@/stores/modules/loginForm';
 import { useSessionStore } from '@/stores/modules/session';
+
+// Mock login function (replace with real API call when backend is available)
+async function login(form: LoginDTO): Promise<{ data: { token: string; userInfo: LoginUser } }> {
+  console.log('Mock login called with:', form);
+  // Simulate successful login for specific credentials
+  if (form.username === 'testuser' && form.password === 'password123') {
+    return {
+      data: {
+        token: 'mock-token-12345',
+        userInfo: {
+          username: form.username,
+          id: '123',
+          email: 'testuser@example.com',
+        },
+      },
+    };
+  }
+  throw new Error('Invalid credentials');
+}
 
 const userStore = useUserStore();
 const sessionStore = useSessionStore();
@@ -30,17 +49,22 @@ async function handleSubmit() {
   try {
     await formRef.value?.validate();
     const res = await login(formModel);
-    console.log(res, 'res');
-    res.data.token && userStore.setToken(res.data.token);
-    res.data.userInfo && userStore.setUserInfo(res.data.userInfo);
+    console.log('Login response:', res);
+    if (res.data.token) {
+      userStore.setToken(res.data.token);
+    }
+    if (res.data.userInfo) {
+      userStore.setUserInfo(res.data.userInfo);
+    }
     ElMessage.success('登录成功');
-    userStore.closeLoginDialog();
-    // 立刻获取回话列表
+    // Mock session list (replace with real call when backend is available)
     await sessionStore.requestSessionList(1, true);
-    router.replace('/');
+    console.log('Navigating to home after login');
+    router.push('/');
   }
   catch (error) {
-    console.error('请求错误:', error);
+    console.error('Login error:', error);
+    ElMessage.error('登录失败，请检查用户名和密码');
   }
 }
 </script>
@@ -88,7 +112,7 @@ async function handleSubmit() {
     <div class="form-tip font-size-12px flex items-center">
       <span>没有账号？</span>
       <span
-        class="c-[var(--el-color-primar,#409eff)] cursor-pointer"
+        class="c-[var(--el-color-primary,#409eff)] cursor-pointer"
         @click="loginFromStore.setLoginFormType('RegistrationForm')"
       >
         立即注册

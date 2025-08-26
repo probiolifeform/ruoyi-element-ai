@@ -35,8 +35,19 @@ export const layoutRouter: RouteRecordRaw[] = [
   },
 ];
 
-// staticRouter[静态路由] 预留
-export const staticRouter: RouteRecordRaw[] = [];
+// staticRouter[静态路由]
+export const staticRouter: RouteRecordRaw[] = [
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/pages/login/index.vue'),
+    meta: {
+      title: '登录',
+      isHide: '1',
+      isFull: '0',
+    },
+  },
+];
 
 // errorRouter (错误页面路由)
 export const errorRouter = [
